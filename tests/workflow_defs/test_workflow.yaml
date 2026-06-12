@@ -1,0 +1,15 @@
+name: Test prusa_mk4s_module Module
+metadata:
+  author: Anthony Feldmann
+  info: Tests the functionality of the Prusa MK4S Module
+  version: 0.1
+
+modules:
+  - name: prusa_mk4s_module
+
+flowdef:
+  - name: Run parametric slicer and print
+    module: prusa_mk4s_module
+    action: slice_and_print
+    args:
+      length: 50.0

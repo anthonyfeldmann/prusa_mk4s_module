@@ -1,0 +1,19 @@
+name: Test_Workcell
+
+#Info about data processing and location of the workcell
+config:
+  workcell_origin_coordinates: [0, 0, 0, 0, 0, 0]
+  redis_host: "wei_redis"
+  server_host: "wei_server"
+  server_port: 8000
+
+#List of all components accessible in this workcell
+modules:
+  - name: prusa_mk4s_module
+    model: Prusa MK4S
+    interface: wei_rest_node
+    config:
+      rest_node_address: "http://127.0.0.1:2000" # Update to "http://prusa_node:2000" if running via Docker
+    workcell_coordinates: [0, 0, 0, 0, 0, 0]
+
+locations: {}

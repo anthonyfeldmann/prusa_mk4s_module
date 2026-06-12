@@ -1,0 +1,5 @@
+node_name: prusa_alpha
+node_description: A MADSci Prusa MK4S node
+node_url: "http://127.0.0.1:2000/"
+prusa_ip: “input later”
+prusa_api_key: "password"
