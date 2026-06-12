@@ -1,0 +1,10 @@
+[project]
+name = "prusa_mk4s_module"
+version = "0.1.0"
+description = "MADSci-powered Node Module for integrating a Prusa MK4S and Optical Sensor."
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "numpy",
+    "opencv-python"
+]

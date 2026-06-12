@@ -1,0 +1,9 @@
+services:
+  prusa_node:
+    build: .
+    ports:
+      - "2000:2000"
+    devices:
+      - "/dev/video0:/dev/video0" 
+    environment:
+      - NODE_NAME=prusa_alpha
