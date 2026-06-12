@@ -1,4 +1,4 @@
-\# AGENTS.md/CLAUDE.md
+# AGENTS.md/CLAUDE.md
 
 
 
@@ -6,7 +6,7 @@ This file provides guidance to AI coding agents when working with code in this r
 
 
 
-\## Overview
+## Overview
 
 
 
@@ -18,7 +18,7 @@ See `MADSci/CLAUDE.md` (or `MADSci/AGENTS.md`) for MADSci framework architecture
 
 
 
-\## Development Commands
+## Development Commands
 
 
 
