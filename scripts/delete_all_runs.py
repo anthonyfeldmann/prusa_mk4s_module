@@ -1,7 +1,9 @@
 """deletes all files on Prusa USB"""
 
 from argparse import ArgumentParser
+
 import requests
+
 
 def main(args):
     """main deletion"""
@@ -11,15 +13,15 @@ def main(args):
 
     print(f"Connecting to Prusa MK4S at {args.ip_address}...")
 
-    #check what is currently printing
+    # check what is currently printing
     try:
         job_resp = requests.get(f"{base_url}/job", headers=headers, timeout=10)
         job_resp.raise_for_status()
-       
+
         current_job = job_resp.json()
         is_printing = current_job.get("state") == "Printing"
         active_file_path = current_job.get("job", {}).get("file", {}).get("path")
-       
+
     except requests.exceptions.RequestException as e:
         raise Exception(f"Could not reach printer to check state: {e}")
 
@@ -33,12 +35,12 @@ def main(args):
         )
 
     file_list = files_resp.json().get("files", [])
-   
+
     if not file_list:
         print("USB drive is already empty.")
         return
 
-    #delete files
+    # delete files
     for f in file_list:
         # Ignore folders to prevent accidental directory corruption
         if f.get("type") == "folder":
@@ -52,7 +54,9 @@ def main(args):
             continue
 
         # Execute the HTTP DELETE command
-        delete_resp = requests.delete(f"{files_url}/{file_path}", headers=headers, timeout=10)
+        delete_resp = requests.delete(
+            f"{files_url}/{file_path}", headers=headers, timeout=10
+        )
 
         if delete_resp.status_code in (200, 204):
             print(f"File '{file_path}' deleted...")
