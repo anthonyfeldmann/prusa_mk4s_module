@@ -17,7 +17,7 @@ class PrusaNodeConfig(RestNodeConfig):
 
 
 class PrusaNode(RestNode):
-    """Minimal Node module for Prusa 3D Printers"""
+    """ Node module for PrusaMK4S"""
     config: PrusaNodeConfig = PrusaNodeConfig()
     config_model = PrusaNodeConfig
 
