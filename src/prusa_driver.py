@@ -1,65 +1,71 @@
 import argparse
-import sys
+import os
 
+# Python looks at your other files in the same folder and imports their specific functions
 from gcode_to_printing import upload_and_start_print
 from STL_To_PRUSAPRINT import slice_mesh
 
-#
-# Python looks at your other files in the same folder and imports their specific functions
-from UpdateOnshape_to_STL import download_custom_stl
-
+# These serve as fallbacks, but they will be dynamically overwritten 
+# by the MADSci REST Node (prusa_rest_node.py) when run in the workcell.
 PRINTER_IP = "146.137.240.52"
-PRUSALINK_KEY = "jjehZqxQ542F9pQ"  # may need to be changed
+PRUSALINK_KEY = "jjehZqxQ542F9pQ"
 
 
-def run_parametric_loop(length_value):
-    """Passes the dimension variables"""
+def run_stl_print(stl_path):
+    """
+    Slices an provided STL file and uploads it directly to the Prusa MK4S.
+    Returns True on success, False on failure to maintain MADSci compliance.
+    """
+    print(f"Starting workflow with provided STL: {stl_path}")
 
-    print(f"starting workflow w {length_value} mm")
+    # Validate the file actually exists before wasting compute time
+    if not os.path.exists(stl_path):
+        print(f"Error: Could not locate STL file at {stl_path}")
+        return False
 
-    # STEP 1: ONSHAPE_to_STL
-    stl_path = download_custom_stl(length_value)
-
-    if not stl_path:
-        print(" Onshape API failed.")
-        sys.exit(1)
-
-    # STEP 2: PRUSASLICER STL_TO_BGCODE
+    # STEP 1: PRUSASLICER STL_TO_BGCODE
+    print("Sending mesh to PrusaSlicer...")
     bgcode_path = slice_mesh(stl_path)
 
     if not bgcode_path:
-        print("PrusaSlicer failed")
-        sys.exit(1)
+        print("Fatal Error: PrusaSlicer failed to generate bgcode.")
+        return False
 
-    # STEP3: BGCODE_TO_PRINT
+    # STEP 2: BGCODE_TO_PRINT
+    print(f"Uploading {bgcode_path} to Prusa MK4S at {PRINTER_IP}...")
     print_started = upload_and_start_print(bgcode_path, PRINTER_IP, PRUSALINK_KEY)
 
     if print_started:
-        print(f"Part ({length_value}mm) is now printing!")
-        sys.exit(0)  # Absolute Success
+        print("Success: Part is now printing!")
+        return True 
     else:
-        print("Fail; Printer is busy or unreachable. Data point not recorded.")
-        sys.exit(1)  # Fatal Failure (Tells your Optimizer to wait or try again)
+        print("Fatal Error: Printer is busy, unreachable, or rejected the file.")
+        return False 
 
 
 def main():
-    """Allows an external optimizer to trigger this script and pass a variable."""
-    parser = argparse.ArgumentParser(description="Parametric Loop Controller")
+    """Allows an engineer to manually test this script directly from the PowerShell terminal."""
+    parser = argparse.ArgumentParser(description="Prusa MK4S STL Print Driver")
 
-    # This creates a new command-line flag specifically for your physical dimension
+    # Replaced the --length argument with an --stl file path argument
     parser.add_argument(
-        "--length",
-        type=float,  # Allows decimals like 150.5
+        "--stl",
+        type=str,
         required=True,
-        help="The physical length (in mm) to inject into the Onshape model.",
+        help="The absolute or relative path to the .stl file you want to print.",
     )
 
     args = parser.parse_args()
 
-    # Fire the engine using the user's variable
-    run_parametric_loop(args.length)
+    # Fire the engine using the user's file path
+    success = run_stl_print(args.stl)
+
+    # When run directly from the terminal, it is safe to use OS exit codes
+    if success:
+        exit(0)
+    else:
+        exit(1)
 
 
 if __name__ == "__main__":
     main()
-    # python3.13 Prusa_Automation.py --length 150 to run
