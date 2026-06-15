@@ -1,78 +1,69 @@
-import os
+#! /usr/bin/env python3
+"""Prusa MK4S Rest Node"""
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from typing import Optional
+from madsci.common.types.node_types import RestNodeConfig
+from madsci.node_module.helpers import action
+from madsci.node_module.rest_node_module import RestNode
+from typing_extensions import Annotated
 
-from camera_driver import get_single_measurement
-from prusa_driver import run_parametric_loop
+import prusa_driver
 
-app = FastAPI(title="Prusa MK4S MADSci Node")
-NODE_NAME = os.getenv("NODE_NAME", "prusa_alpha")
-
-current_state = "IDLE"
-
-
-class ActionRequest(BaseModel):
-    action: str
-    args: dict
+class PrusaNodeConfig(RestNodeConfig):
+    """Configuration for the Prusa node module."""
+    prusa_ip: Optional[str] = None
+    prusa_api_key: Optional[str] = None
 
 
-@app.get("/state")
-def get_state():
-    return {"state": current_state}
+class PrusaNode(RestNode):
+    """Node module for Prusa 3D """
+    config: PrusaNodeConfig = PrusaNodeConfig()
+    config_model = PrusaNodeConfig
 
+    def startup_handler(self) -> None:
+        """Initializes the node."""
+        self.logger.log("Initializing Prusa MK4S node")
+        
+        if not self.config.prusa_ip or not self.config.prusa_api_key:
+            raise ValueError("Prusa IP or API key missing from config")
 
-@app.get("/about")
-def get_about():
-    return {
-        "name": NODE_NAME,
-        "model": "Prusa MK4S & Optical Sensor Node",
-        "actions": ["slice_and_print", "measure_fluid"],
-    }
+        # Push credentials directly to driver
+        prusa_driver.PRINTER_IP = self.config.prusa_ip
+        prusa_driver.PRUSALINK_KEY = self.config.prusa_api_key
+        
+        self.startup_has_run = True
+        self.logger.info("Prusa node created")
 
+    def shutdown_handler(self) -> None:
+        """Cleanly shuts down the node."""
+        self.logger.log("Shutting down Prusa node...")
+        self.shutdown_has_run = True
 
-@app.post("/action")
-def perform_action(req: ActionRequest):
-    global current_state
+    def state_handler(self) -> None:
+        """Reports the node's current status to the WEI orchestrator."""
+        self.node_state = {"status": "ready"}
 
-    if current_state != "IDLE":
-        raise HTTPException(status_code=400, detail="Node is currently busy.")
-
-    if req.action == "slice_and_print":
-        current_state = "RUNNING"
+    @action(name="slice_and_print", description="Run parametric generation and print")
+    def slice_and_print(
+        self, length: Annotated[float, "Parametric length in mm"]
+    ) -> dict:
+        """Triggers the physical printer via your driver."""
+        self.logger.log(f"Executing print job for length: {length}mm")
+        
         try:
-            ridge_length = float(req.args.get("length", 50.0))
-            print(f"[{NODE_NAME}] Printing length {ridge_length}mm")
-            run_parametric_loop(ridge_length)
-            current_state = "IDLE"
-            return {
-                "status": "success",
-                "action": req.action,
-                "result": "Print initiated",
-            }
-        except Exception as e:
-            current_state = "ERROR"
-            raise HTTPException(status_code=500, detail=str(e))
+            # Assumes your driver now returns True on success and False on failure
+            success = prusa_driver.run_parametric_loop(length)
+            
+            if success:
+                self.logger.log("Print job successfully pushed to PrusaLink.")
+                return {"status": "succeeded", "length": length}
+            else:
+                raise Exception("PrusaLink rejected the print job.")
+                
+        except Exception as err:
+            self.logger.error(f"Action failed: {err}")
+            raise
 
-    elif req.action == "measure_fluid":
-        current_state = "RUNNING"
-        try:
-            target = int(req.args.get("target_bucket", 3))
-            print(f"[{NODE_NAME}] Measuring bucket {target}")
-            height = get_single_measurement(
-                target_bucket=target, total_buckets=5, pixels_per_mm=3.2
-            )
-            current_state = "IDLE"
-            return {
-                "status": "success",
-                "action": req.action,
-                "result": {"height_mm": height},
-            }
-        except Exception as e:
-            current_state = "ERROR"
-            raise HTTPException(status_code=500, detail=str(e))
 
-    else:
-        raise HTTPException(
-            status_code=404, detail=f"Action '{req.action}' not supported."
-        )
+if __name__ == "__main__":
+    PrusaNode().start_node()
