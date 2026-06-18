@@ -1,6 +1,5 @@
 """Handles uploading .bgcode to Prusa MK4S via PrusaLink API."""
 
-
 import requests
 from pathlib import Path
 import time
@@ -13,22 +12,26 @@ def upload_and_start_print(file_path: str, ip: str, api_key: str) -> bool:
     if not file_path_obj.exists():
         return False
 
-    url = f"http://{ip}/api/v1/files/usb/{file_path_obj.name}"
-    headers = {"X-Api-Key": api_key, "Print-After-Upload": "true"}
+    # Switch to the 'local' storage endpoint instead of 'usb'
+    url = f"http://{ip}/api/v1/files/local/{file_path_obj.name}"
+    headers = {"X-Api-Key": api_key}
 
     try:
-        # Give the system one last second to flush the file buffer
         time.sleep(1) 
         with file_path_obj.open("rb") as f:
-            response = requests.post(
-                url, 
-                headers=headers, 
-                data=f, 
-                timeout=120
-            )
+            # First, upload the file
+            response = requests.post(url, headers=headers, data=f, timeout=120)
             
-        # Return success only if printer accepts the file (200-204 range)
-        return response.status_code in [200, 201, 204]
+            if response.status_code in [200, 201]:
+                # If upload succeeds, send a separate command to start the print
+                start_url = f"http://{ip}/api/v1/job"
+                start_headers = {"X-Api-Key": api_key, "Content-Type": "application/json"}
+                start_data = {"command": "start", "file": f"local/{file_path_obj.name}"}
+                
+                start_resp = requests.post(start_url, headers=start_headers, json=start_data)
+                return start_resp.status_code == 204
+            
+        return False
     except Exception:
         return False
 if __name__ == "__main__":
