@@ -5,7 +5,7 @@ def slice_mesh(stl_path: str) -> str | None:
     stl_path_obj = Path(stl_path)
     if not stl_path_obj.exists(): return None
 
-    slicer_exe = "prusa-slicer" 
+    slicer_exe = "/usr/bin/prusa-slicer" 
     config_file = Path("/home/rpl/workspaces/rpl_dev/prusa_mk4s_module/configs/RPL_Printer_Config.ini")
     bgcode_path = stl_path_obj.with_suffix(".bgcode")
     
