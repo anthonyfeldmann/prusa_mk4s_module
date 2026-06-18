@@ -1,27 +1,32 @@
 #! /usr/bin/env python3
-"""Prusa MK4S Rest Node"""
+"""Prusa MK4S Rest Node."""
 
-from typing import Optional
+from typing import Any, Optional
+
+from typing_extensions import Annotated
+
 from madsci.common.types.node_types import RestNodeConfig
 from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
-from typing_extensions import Annotated
 
 import prusa_driver
 
+
 class PrusaNodeConfig(RestNodeConfig):
-    """Config for Prusa node"""
+    """Config for Prusa node."""
+    
     prusa_ip: Optional[str] = None
     prusa_api_key: Optional[str] = None
 
 
 class PrusaNode(RestNode):
-    """ Node module for PrusaMK4S"""
+    """Node module for Prusa MK4S."""
+    
     config: PrusaNodeConfig = PrusaNodeConfig()
     config_model = PrusaNodeConfig
 
     def startup_handler(self) -> None:
-        """Initialize node"""
+        """Initialize node."""
         self.logger.log("Starting Prusa Node")
         
         if not self.config.prusa_ip or not self.config.prusa_api_key:
@@ -40,12 +45,13 @@ class PrusaNode(RestNode):
         self.shutdown_has_run = True
 
     def state_handler(self) -> None:
+        """Returns the current node state."""
         self.node_state = {"status": "ready"}
 
     @action(name="slice_and_print", description="Run parametric generation and print")
     def slice_and_print(
         self, length: Annotated[float, "Parametric length in mm"]
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Takes a length, generates CAD via Onshape, slices, and runs printer."""
         self.logger.log(f"Executing parametric print job for length: {length}mm")
         
