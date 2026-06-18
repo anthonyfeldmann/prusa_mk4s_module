@@ -1,45 +1,36 @@
-"""Slices STL files using PrusaSlicer on Linux."""
+import os
+from onshape_client.client import Client
 
-import subprocess
-from pathlib import Path
+DID = '460766ee1fd3b3b2a615b94a'
+WID = '979042f4d058b6f5579afa14'
+EID = '1dbb2720f9be98854d69ba84'
 
-def slice_mesh(stl_path: str) -> str | None:
-    """Slices an STL and returns the .bgcode path."""
-    
-    stl_path_obj = Path(stl_path)
-    
-    print("\n--- Slicer Started ---")
-    if not stl_path_obj.exists():
-        print(f"Could not find STL file: {stl_path}")
-        return None
+def download_custom_stl(dynamic_length_mm):
+    """Requests a custom-sized, metric STL from Onshape."""
+    client = Client(configuration={
+        "base_url": "https://cad-usw2.onshape.com", 
+        "access_key": "on_KGHB3Hg5gDl4hPffcpuCd",
+        "secret_key": "he1iDT28dxOsLz7Ww5TAVXgcj1PopbihMT50NKyMcmacO0pc"
+    })
 
-    slicer_exe = "prusa-slicer" 
+    api_url = f"https://cad-usw2.onshape.com/api/partstudios/d/{DID}/w/{WID}/e/{EID}/stl"
     
-    # Update this to your absolute path on the Linux server
-    config_file = Path("/home/rpl/workspaces/rpl_dev/prusa_mk4s_module/configs/RPL_Printer_Config.ini")
-    
-    # Generate output path
-    bgcode_path = stl_path_obj.with_suffix(".bgcode")
-    
-    print(f"Slicing: {stl_path_obj.name}...")
+    response = client.api_client.request(
+        method='GET',
+        url=api_url,
+        query_params=[('units', 'millimeter'), ('mode', 'text'), ('configuration', f'L={dynamic_length_mm} mm')]
+    )
 
-    try:
-        subprocess.run([
-            slicer_exe,
-            "--load", str(config_file),
-            "--center", "125,105",
-            "--export-bgcode",
-            "--output", str(bgcode_path),
-            str(stl_path_obj)
-        ], check=True)
+    if response.status == 200:
+        base_dir = "/home/rpl/workspaces/rpl_dev/prusa_mk4s_module/output_files"
+        os.makedirs(base_dir, exist_ok=True)
         
-        print(f"Slicing Complete: {bgcode_path.name}")
-        return str(bgcode_path)
-        
-    except subprocess.CalledProcessError as e:
-        print(f"PrusaSlicer failed: {e}")
-        return None
+        output_file = os.path.join(base_dir, f"fluidtest_{dynamic_length_mm}mm.stl")
+        with open(output_file, 'w') as f:
+            f.write(response.data)
+        return output_file
+    return None
 
 if __name__ == "__main__":
-    test_stl = "/home/rpl/workspaces/rpl_dev/prusa_mk4s_module/output_files/fluidtest_300mm.stl"
-    slice_mesh(test_stl)
+    test_dimension = 300
+    download_custom_stl(test_dimension)
