@@ -60,5 +60,6 @@ class CameraNode(RestNode):
 
 
 if __name__ == "__main__":
-        
+    if "--name" not in sys.argv:
+        sys.argv.extend(["--name", "camera_2"])
     CameraNode().start_node()
