@@ -11,7 +11,6 @@ def download_custom_stl(dynamic_length_mm):
     
     # --- 2. AUTHENTICATION ---
     client = Client(configuration={
-        # FIX 1: Updated to the US-West server to silence the UserWarning
         "base_url": "https://cad-usw2.onshape.com", 
         "access_key": "on_KGHB3Hg5gDl4hPffcpuCd",
         "secret_key": "he1iDT28dxOsLz7Ww5TAVXgcj1PopbihMT50NKyMcmacO0pc"
@@ -27,7 +26,6 @@ def download_custom_stl(dynamic_length_mm):
         url=api_url,
         query_params=[
             ('units', 'millimeter'),               
-            # FIX 2: Changed from 'binary' to 'text' so the Onshape library can read it
             ('mode', 'text'),                    
             ('configuration', f'L={dynamic_length_mm} mm') 
         ]
@@ -36,14 +34,15 @@ def download_custom_stl(dynamic_length_mm):
     # --- 5. SAVE THE RESULT ---
     if response.status == 200:
         file_name = f"fluidtest_{dynamic_length_mm}mm.stl"
-        save_path = os.path.join(r"C:\Users\Anthony Feldmann\Downloads", file_name)
+
+        base_dir = "/home/rpl/workspaces/rpl_dev/prusa_mk4s_module/output_files"
+        output_file = os.path.join(base_dir, file_name)
         
-        # FIX 3: Changed 'wb' (Write Binary) to 'w' (Write Text)
-        with open(save_path, 'w') as f:
+        with open(output_file, 'w') as f:
             f.write(response.data)
         
-        print(f"Success! Saved to: {save_path}")
-        return save_path
+        print(f"Success! Saved to: {output_file}")
+        return output_file
         
     else:
         print(f"Error: Onshape API returned HTTP {response.status}")
