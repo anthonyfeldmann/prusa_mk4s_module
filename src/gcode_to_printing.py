@@ -1,51 +1,28 @@
-"""Handles uploading .bgcode to Prusa MK4S via PrusaLink API."""
-
 import requests
 from pathlib import Path
+import time
 
-"""overwritten"""
 PRINTER_IP = "146.137.240.52"
 PRUSALINK_KEY = "3ow4yo9CDB3kkzx"
 
 def upload_and_start_print(file_path: str, ip: str, api_key: str) -> bool:
-    """Uploads G-code to printer and starts the print."""
-    
     file_path_obj = Path(file_path)
-    
-    if not file_path_obj.exists():
-        print(f"Error: no G-code at {file_path}")
-        return False
+    if not file_path_obj.exists(): return False
 
     url = f"http://{ip}/api/v1/files/usb/{file_path_obj.name}"
     headers = {"X-Api-Key": api_key, "Print-After-Upload": "true"}
 
-    print(f"Uploading '{file_path_obj.name}' to the printer...")
-
     try:
+        time.sleep(1)
         with file_path_obj.open("rb") as f:
             response = requests.post(
-                url,
-                headers=headers,
-                data=f,
-                proxies={"http": None, "https": None},
-                timeout=60
+                url, headers=headers, data=f, 
+                proxies={"http": None, "https": None}, timeout=60
             )
-            
-        if response.status_code in [200, 204, 201]:
-            print("File uploaded and printer heating.")
-            return True
-        elif response.status_code == 409:
-            print("File uploaded, but printer busy.")
-            return False
-        else:
-            print(f"Upload failed. HTTP {response.status_code}: {response.text}")
-            return False
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error connecting to printer: {e}")
+        return response.status_code in [200, 201, 204]
+    except requests.exceptions.RequestException:
         return False
 
 if __name__ == "__main__":
-    # Test path
     TEST_GCODE = "/home/rpl/workspaces/rpl_dev/prusa_mk4s_module/output_files/fluidtest_300mm.bgcode"
     upload_and_start_print(TEST_GCODE, PRINTER_IP, PRUSALINK_KEY)
