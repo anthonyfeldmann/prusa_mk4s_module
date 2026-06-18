@@ -25,7 +25,7 @@ def run_parametric_loop(length: float) -> bool:
     try:
         # 1. Generate the STL using your existing Onshape script
         # (Ensure your script returns the absolute or relative path to the new STL)
-        stl_path = generate_stl(length)
+        stl_path = download_custom_stl(length)
         
     except Exception as e:
         print(f"Fatal Error: Onshape API generation failed: {e}")  # noqa: T201
