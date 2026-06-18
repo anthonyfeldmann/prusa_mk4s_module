@@ -72,4 +72,4 @@ class PrusaNode(RestNode):
 
 if __name__ == "__main__":
     # Specify port 
-    PrusaNode().start_node(port=2006)
+    PrusaNode().start_node()
