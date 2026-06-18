@@ -15,8 +15,8 @@ import prusa_driver
 class PrusaNodeConfig(RestNodeConfig):
     """Config for Prusa node."""
     
-    prusa_ip: Optional[str] = 146.137.240.52
-    prusa_api_key: Optional[str] = jjehZqxQ542F9pQ
+    prusa_ip: Optional[str] = "146.137.240.52"
+    prusa_api_key: Optional[str] = "jjehZqxQ542F9pQ"
 
 
 class PrusaNode(RestNode):
