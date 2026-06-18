@@ -5,7 +5,7 @@ from pathlib import Path
 import time
 
 PRINTER_IP = "146.137.240.52"
-PRUSALINK_KEY = "YOUR_VERIFIED_API_KEY"  # <-- Ensure your correct key is here!
+PRUSALINK_KEY = "jjehZqxQ542F9pQ"   
 
 def upload_and_start_print(file_path: str, ip: str, api_key: str) -> bool:
     file_path_obj = Path(file_path)
