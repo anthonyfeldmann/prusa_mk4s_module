@@ -7,7 +7,7 @@ dependencies = [
     "uvicorn",
     "numpy",
     "opencv-python",
-    "madsci.node_module~=0.7",
-    "madsci.client~=0.7",
-    "madsci.common~=0.7",
+    "madsci.node_module~=0.8",
+    "madsci.client~=0.8",
+    "madsci.common~=0.8",
 ]
