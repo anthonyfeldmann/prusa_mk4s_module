@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 """Prusa MK4S Rest Node"""
 
-from pathlib import Path
 from typing import Optional
 from madsci.common.types.node_types import RestNodeConfig
 from madsci.node_module.helpers import action
@@ -43,20 +42,20 @@ class PrusaNode(RestNode):
     def state_handler(self) -> None:
         self.node_state = {"status": "ready"}
 
-    @action(name="slice_and_print", description="Slice uploaded STL and print")
+    @action(name="slice_and_print", description="Run parametric generation and print")
     def slice_and_print(
-        self, stl_file: Annotated[Path, "The physical STL file to be sliced"]
+        self, length: Annotated[float, "Parametric length in mm"]
     ) -> dict:
-        """Takes an STL file, slices it, and runs printer."""
-        self.logger.log(f"Received STL file at temporary location: {stl_file}")
+        """Takes a length, generates CAD via Onshape, slices, and runs printer."""
+        self.logger.log(f"Executing parametric print job for length: {length}mm")
         
         try:
-            # Pass file path directly to driver
-            success = prusa_driver.run_stl_print(stl_file)
+            # Pass the length directly to your original driver logic
+            success = prusa_driver.run_parametric_loop(length)
             
             if success:
                 self.logger.log("Print job successfully pushed to PrusaLink.")
-                return {"status": "succeeded", "message": "STL sliced and printing!"}
+                return {"status": "succeeded", "length": length}
             else:
                 raise Exception("PrusaLink rejected the print job.")
                 
@@ -66,4 +65,5 @@ class PrusaNode(RestNode):
 
 
 if __name__ == "__main__":
-    PrusaNode().start_node()
+    # Specify port 
+    PrusaNode().start_node(port=2006)
