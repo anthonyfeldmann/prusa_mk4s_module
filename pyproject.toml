@@ -10,7 +10,7 @@ dependencies = [
     "madsci.node_module~=0.8",
     "madsci.client~=0.8",
     "madsci.common~=0.8",
-    "filelock"
+    "filelock",
     "onshape-client"
 ]
 requires-python = ">=3.10"
