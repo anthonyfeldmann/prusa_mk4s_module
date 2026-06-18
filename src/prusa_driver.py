@@ -10,7 +10,7 @@ from STL_To_PRUSAPRINT import slice_mesh
 from UpdateOnshape_to_STL import download_custom_stl
 
 PRINTER_IP = "146.137.240.52"
-PRUSALINK_KEY = "3ow4yo9CDB3kkzx"
+PRUSALINK_KEY = "jjehZqxQ542F9pQ"
 
 def run_parametric_loop(length: float) -> bool:
     stl_path = download_custom_stl(length)
