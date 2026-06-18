@@ -4,40 +4,31 @@ import subprocess
 from pathlib import Path
 
 def slice_mesh(stl_path: str) -> str | None:
-    """Slices an STL and returns the .gcode path."""
+    """Slices an STL to .bgcode using the latest Flatpak version."""
     
     stl_path_obj = Path(stl_path)
-    
-    print("\n--- Slicer Started ---")
-    if not stl_path_obj.exists():
-        print(f"Could not find STL file: {stl_path}")
-        return None
+    if not stl_path_obj.exists(): return None
 
-    # Using the verified absolute path
-    slicer_exe = "/usr/bin/prusa-slicer" 
-    
+    # Using Flatpak executable and App ID
+    slicer_exe = "flatpak"
+    app_id = "com.prusa3d.PrusaSlicer"
     config_file = Path("/home/rpl/workspaces/rpl_dev/prusa_mk4s_module/configs/RPL_Printer_Config.ini")
     
-    # Generate output path with .gcode extension
-    gcode_path = stl_path_obj.with_suffix(".gcode")
+    # Updated extension to .bgcode for modern MK4S workflow
+    bgcode_path = stl_path_obj.with_suffix(".bgcode")
     
-    print(f"Slicing: {stl_path_obj.name}...")
-
     try:
         subprocess.run([
-            slicer_exe,
+            slicer_exe, "run", app_id,
             "--load", str(config_file),
             "--center", "125,105",
-            "--export-gcode",
-            "--output", str(gcode_path),
+            "--export-bgcode",
+            "--output", str(bgcode_path),
             str(stl_path_obj)
         ], check=True)
         
-        print(f"Slicing Complete: {gcode_path.name}")
-        return str(gcode_path)
-        
-    except subprocess.CalledProcessError as e:
-        print(f"PrusaSlicer failed: {e}")
+        return str(bgcode_path)
+    except subprocess.CalledProcessError:
         return None
 
 if __name__ == "__main__":
