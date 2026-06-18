@@ -6,5 +6,8 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "numpy",
-    "opencv-python"
+    "opencv-python",
+    "madsci.node_module~=0.7",
+    "madsci.client~=0.7",
+    "madsci.common~=0.7",
 ]
