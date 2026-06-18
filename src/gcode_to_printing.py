@@ -5,7 +5,7 @@ from pathlib import Path
 import time
 
 PRINTER_IP = "146.137.240.52"
-PRUSALINK_KEY = "YOUR_VERIFIED_API_KEY" 
+PRUSALINK_KEY = "jjehZqxQ542F9pQ" 
 
 def is_printer_ready(ip: str, api_key: str) -> bool:
     url = f"http://{ip}/api/v1/status"
