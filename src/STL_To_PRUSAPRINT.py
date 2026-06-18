@@ -1,4 +1,4 @@
-"""Slices STL files using PrusaSlicer on Linux."""
+"""Slices STL files using PrusaSlicer (Flatpak) on Linux."""
 
 import subprocess
 from pathlib import Path
@@ -9,17 +9,23 @@ def slice_mesh(stl_path: str) -> str | None:
     stl_path_obj = Path(stl_path)
     if not stl_path_obj.exists(): return None
 
-    # Using Flatpak executable and App ID
-    slicer_exe = "flatpak"
+    # Use the absolute path to the Flatpak utility and the App ID
+    flatpak_exe = "/usr/bin/flatpak"
     app_id = "com.prusa3d.PrusaSlicer"
     config_file = Path("/home/rpl/workspaces/rpl_dev/prusa_mk4s_module/configs/RPL_Printer_Config.ini")
     
-    # Updated extension to .bgcode for modern MK4S workflow
+    # Verify version to confirm we are using the modern slicer
+    try:
+        version = subprocess.check_output([flatpak_exe, "run", app_id, "--version"]).decode()
+        print(f"DEBUG: PrusaSlicer version: {version.strip()}")
+    except Exception as e:
+        print(f"DEBUG: Could not verify version: {e}")
+
     bgcode_path = stl_path_obj.with_suffix(".bgcode")
     
     try:
         subprocess.run([
-            slicer_exe, "run", app_id,
+            flatpak_exe, "run", app_id,
             "--load", str(config_file),
             "--center", "125,105",
             "--export-bgcode",
@@ -28,7 +34,8 @@ def slice_mesh(stl_path: str) -> str | None:
         ], check=True)
         
         return str(bgcode_path)
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        print(f"PrusaSlicer failed: {e}")
         return None
 
 if __name__ == "__main__":
