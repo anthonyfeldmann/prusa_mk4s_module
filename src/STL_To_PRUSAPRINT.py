@@ -1,4 +1,4 @@
-"""Slices STL files using PrusaSlicer (Flatpak) on Linux."""
+
 
 """Slices STL files using PrusaSlicer (Flatpak) on Linux."""
 
