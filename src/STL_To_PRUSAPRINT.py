@@ -23,7 +23,7 @@ def slice_mesh(stl_path: str) -> str | None:
         subprocess.run([
             flatpak_exe, "run", app_id,
             "--load", str(config_file),
-            "--center", "125,105",
+            "--center", "110,105",
             "--slice",
             "--output", str(bgcode_path),
             str(stl_path_obj)
