@@ -2,8 +2,6 @@
 """Prusa MK4S Rest Node."""
 
 from typing import Any, Optional
-import requests
-import time
 
 from typing_extensions import Annotated
 
@@ -62,52 +60,7 @@ class PrusaNode(RestNode):
             success = prusa_driver.run_parametric_loop(length)
             
             if success:
-                self.logger.log("Print job pushed. Waiting for physical completion...")
-                
-                status_url = f"http://{self.config.prusa_ip}/api/job"
-                headers = {"X-Api-Key": self.config.prusa_api_key}
-                
-                # --- POLLING LOOP (BLOCKS UNTIL FINISHED) ---
-                while True:
-                    try:
-                        status_response = requests.get(status_url, headers=headers, timeout=10)
-                        if status_response.status_code == 200:
-                            data = status_response.json()
-                            state = data.get("state", "unknown").lower()
-                            
-                            if state == "finished":
-                                self.logger.log("Print has finished successfully.")
-                                break
-                            elif state in ["cancelled", "error"]:
-                                raise Exception(f"Printer reported failure state: {state}")
-                                
-                    except requests.exceptions.RequestException as e:
-                        self.logger.warning(f"Failed to reach PrusaLink during polling: {e}")
-                    
-                    # Wait 15 seconds before checking again
-                    time.sleep(15)
-                # ---------------------------------------------
-                
-                # --- THE M999 SOFT REBOOT WORKAROUND ---
-                self.logger.log("Pushing M999 command to soft-reboot the printer and clear the screen.")
-                command_url = f"http://{self.config.prusa_ip}/api/printer/command"
-                
-                # Send the M999 G-code to force a firmware restart
-                payload = {"commands": ["M999"]}
-                
-                try:
-                    # We expect a timeout/connection error because the server instantly dies as the board reboots
-                    requests.post(command_url, json=payload, headers=headers, timeout=3)
-                except requests.exceptions.RequestException:
-                    self.logger.log("Connection dropped: Reboot command successfully received.")
-                
-                # Wait for the printer to boot back up into the Idle state
-                self.logger.log("Waiting 20 seconds for PrusaLink to come back online...")
-                time.sleep(20)
-                
-                self.logger.log("Printer successfully reset to Idle.")
-                # ------------------------------
-                
+                self.logger.log("Print job successfully pushed to PrusaLink.")
                 return {"status": "succeeded", "length": length}
             else:
                 raise Exception("PrusaLink rejected the print job.")
