@@ -3,11 +3,9 @@
 import argparse
 import sys
 import time
-import requests
 from pathlib import Path
 
-# Removed upload_and_start_print since we are handling the sequence directly
-from gcode_to_printing import is_printer_ready, monitor_print_job
+from gcode_to_printing import upload_and_start_print, is_printer_ready, monitor_print_job
 from STL_To_PRUSAPRINT import slice_mesh
 from UpdateOnshape_to_STL import download_custom_stl
 
@@ -48,41 +46,8 @@ def run_stl_print(stl_path: str) -> bool:
         print("Error: Printer did not become available.")
         return False
 
-    # --- SPLIT UPLOAD AND START SEQUENCE ---
-    filename = path_to_file.name
-    headers = {"X-Api-Key": PRUSALINK_KEY}
-    target_url = f"http://{PRINTER_IP}/api/files/usb/{filename}"
-    
-    print(f"1. Uploading {filename} to printer USB...")
-    try:
-        # Step 1: Passive Upload (PUT request)
-        with open(path_to_file, "rb") as f:
-            upload_response = requests.put(target_url, data=f, headers=headers, timeout=120)
-            
-        if upload_response.status_code not in [200, 201, 204]:
-            print(f"Upload failed: {upload_response.status_code} - {upload_response.text}")
-            return False
-            
-        print("2. Upload complete. Waiting 2 seconds for MK4 filesystem...")
-        # Step 2: Buffer Wait
-        time.sleep(2)
-        
-        # Step 3: Dedicated Start Command (POST request to override UI)
-        print("3. Commanding MK4 to start the job...")
-        payload = {"command": "select", "print": True}
-        start_response = requests.post(target_url, json=payload, headers=headers, timeout=10)
-        
-        if start_response.status_code not in [200, 204]:
-            print(f"Start command rejected: {start_response.status_code} - {start_response.text}")
-            return False
-            
-        print("Print successfully started!")
-        start_success = True
-        
-    except requests.exceptions.RequestException as e:
-        print(f"Failed to communicate with PrusaLink API: {e}")
-        return False
-    # ---------------------------------------
+    # Upload the file and start the job
+    start_success = upload_and_start_print(bgcode_path, PRINTER_IP, PRUSALINK_KEY)
     
     # If the print started successfully, block the script until it finishes!
     if start_success:
