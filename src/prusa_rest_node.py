@@ -88,18 +88,24 @@ class PrusaNode(RestNode):
                     time.sleep(15)
                 # ---------------------------------------------
                 
-                # --- EMBEDDED PRINTER RESET VIA M1200 ---
-                self.logger.log("Pushing M1200 command to clear completion screen.")
+                # --- THE M999 SOFT REBOOT WORKAROUND ---
+                self.logger.log("Pushing M999 command to soft-reboot the printer and clear the screen.")
                 command_url = f"http://{self.config.prusa_ip}/api/printer/command"
                 
-                # Send the M1200 G-code directly over the API
-                payload = {"commands": ["M1200"]}
-                reset_response = requests.post(command_url, json=payload, headers=headers, timeout=10)
+                # Send the M999 G-code to force a firmware restart
+                payload = {"commands": ["M999"]}
                 
-                if reset_response.status_code in [200, 204]:
-                    self.logger.log("Printer successfully reset to Idle via M1200.")
-                else:
-                    self.logger.warning(f"Failed to reset printer. Status Code: {reset_response.status_code}")
+                try:
+                    # We expect a timeout/connection error because the server instantly dies as the board reboots
+                    requests.post(command_url, json=payload, headers=headers, timeout=3)
+                except requests.exceptions.RequestException:
+                    self.logger.log("Connection dropped: Reboot command successfully received.")
+                
+                # Wait for the printer to boot back up into the Idle state
+                self.logger.log("Waiting 20 seconds for PrusaLink to come back online...")
+                time.sleep(20)
+                
+                self.logger.log("Printer successfully reset to Idle.")
                 # ------------------------------
                 
                 return {"status": "succeeded", "length": length}
