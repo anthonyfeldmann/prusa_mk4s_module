@@ -64,13 +64,13 @@ class PrusaNode(RestNode):
             if success:
                 self.logger.log("Print job pushed. Waiting for physical completion...")
                 
-                url = f"http://{self.config.prusa_ip}/api/job"
+                status_url = f"http://{self.config.prusa_ip}/api/job"
                 headers = {"X-Api-Key": self.config.prusa_api_key}
                 
                 # --- POLLING LOOP (BLOCKS UNTIL FINISHED) ---
                 while True:
                     try:
-                        status_response = requests.get(url, headers=headers, timeout=10)
+                        status_response = requests.get(status_url, headers=headers, timeout=10)
                         if status_response.status_code == 200:
                             data = status_response.json()
                             state = data.get("state", "unknown").lower()
@@ -88,12 +88,16 @@ class PrusaNode(RestNode):
                     time.sleep(15)
                 # ---------------------------------------------
                 
-                # --- EMBEDDED PRINTER RESET ---
-                self.logger.log("Pushing reset command to PrusaLink.")
-                reset_response = requests.delete(url, headers=headers, timeout=10)
+                # --- EMBEDDED PRINTER RESET VIA M1200 ---
+                self.logger.log("Pushing M1200 command to clear completion screen.")
+                command_url = f"http://{self.config.prusa_ip}/api/printer/command"
+                
+                # Send the M1200 G-code directly over the API
+                payload = {"commands": ["M1200"]}
+                reset_response = requests.post(command_url, json=payload, headers=headers, timeout=10)
                 
                 if reset_response.status_code in [200, 204]:
-                    self.logger.log("Printer successfully reset to Idle.")
+                    self.logger.log("Printer successfully reset to Idle via M1200.")
                 else:
                     self.logger.warning(f"Failed to reset printer. Status Code: {reset_response.status_code}")
                 # ------------------------------
