@@ -3,6 +3,7 @@
 
 from typing import Any, Optional
 import requests
+import time
 
 from typing_extensions import Annotated
 
@@ -61,18 +62,40 @@ class PrusaNode(RestNode):
             success = prusa_driver.run_parametric_loop(length)
             
             if success:
-                self.logger.log("Print job finished. Pushing reset command to PrusaLink.")
+                self.logger.log("Print job pushed. Waiting for physical completion...")
                 
-                # --- EMBEDDED PRINTER RESET ---
                 url = f"http://{self.config.prusa_ip}/api/job"
                 headers = {"X-Api-Key": self.config.prusa_api_key}
                 
-                response = requests.delete(url, headers=headers, timeout=10)
+                # --- POLLING LOOP (BLOCKS UNTIL FINISHED) ---
+                while True:
+                    try:
+                        status_response = requests.get(url, headers=headers, timeout=10)
+                        if status_response.status_code == 200:
+                            data = status_response.json()
+                            state = data.get("state", "unknown").lower()
+                            
+                            if state == "finished":
+                                self.logger.log("Print has finished successfully.")
+                                break
+                            elif state in ["cancelled", "error"]:
+                                raise Exception(f"Printer reported failure state: {state}")
+                                
+                    except requests.exceptions.RequestException as e:
+                        self.logger.warning(f"Failed to reach PrusaLink during polling: {e}")
+                    
+                    # Wait 15 seconds before checking again
+                    time.sleep(15)
+                # ---------------------------------------------
                 
-                if response.status_code in [200, 204]:
+                # --- EMBEDDED PRINTER RESET ---
+                self.logger.log("Pushing reset command to PrusaLink.")
+                reset_response = requests.delete(url, headers=headers, timeout=10)
+                
+                if reset_response.status_code in [200, 204]:
                     self.logger.log("Printer successfully reset to Idle.")
                 else:
-                    self.logger.warning(f"Failed to reset printer. Status Code: {response.status_code}")
+                    self.logger.warning(f"Failed to reset printer. Status Code: {reset_response.status_code}")
                 # ------------------------------
                 
                 return {"status": "succeeded", "length": length}
