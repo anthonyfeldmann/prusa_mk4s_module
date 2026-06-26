@@ -3,6 +3,7 @@
 import argparse
 import sys
 import time
+import requests
 from pathlib import Path
 
 from gcode_to_printing import upload_and_start_print, is_printer_ready, monitor_print_job
@@ -11,6 +12,33 @@ from UpdateOnshape_to_STL import download_custom_stl
 
 PRINTER_IP = "146.137.240.52"
 PRUSALINK_KEY = "jjehZqxQ542F9pQ"
+
+# --- PRUSACONNECT CLOUD CREDENTIALS ---
+PRUSA_CONNECT_UUID = "3e40403e-a4c8-41b2-b3a6-c932feff4c64"
+PRUSA_CONNECT_TOKEN = "R55RXEA73e40403e"
+
+def force_ready_via_cloud() -> bool:
+    """Sends the 'Set Ready' command via PrusaConnect to dismiss the Finished screen."""
+    print("Reaching out to PrusaConnect cloud to clear the UI...")
+    url = f"https://connect.prusa3d.com/app/printers/{PRUSA_CONNECT_UUID}/command"
+    headers = {
+        "Authorization": f"Bearer {PRUSA_CONNECT_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    # Command to force the UI into the Ready state
+    payload = {"command": "set_ready"} 
+    
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        if response.status_code in [200, 201, 204]:
+            print("Cloud command accepted! UI is clear.")
+            return True
+        else:
+            print(f"Cloud command rejected: {response.status_code} - {response.text}")
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"Network error reaching PrusaConnect: {e}")
+        return False
 
 def run_parametric_loop(length: float) -> bool:
     stl_path = download_custom_stl(length)
@@ -51,7 +79,20 @@ def run_stl_print(stl_path: str) -> bool:
     
     # If the print started successfully, block the script until it finishes!
     if start_success:
-        return monitor_print_job(PRINTER_IP, PRUSALINK_KEY)
+        print_finished = monitor_print_job(PRINTER_IP, PRUSALINK_KEY)
+        
+        # --- END OF CYCLE CLEANUP ---
+        # If the print hit 100%, trigger the cloud reset before releasing the orchestrator
+        if print_finished:
+            print("Print completed successfully. Triggering cloud reset to clear UI...")
+            force_ready_via_cloud()
+            
+            # Give the MK4 motherboard 2 seconds to physically update the screen 
+            # before the script exits and hands control back to the orchestrator.
+            time.sleep(2)
+        # ----------------------------
+        
+        return print_finished
     else:
         return False
 
