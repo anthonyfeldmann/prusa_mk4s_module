@@ -32,7 +32,6 @@ class PrusaNode(RestNode):
         if not self.config.prusa_ip or not self.config.prusa_api_key:
             raise ValueError("Prusa IP or API key is missing from config")
 
-        # Push credentials directly to your custom driver
         prusa_driver.PRINTER_IP = self.config.prusa_ip
         prusa_driver.PRUSALINK_KEY = self.config.prusa_api_key
         
