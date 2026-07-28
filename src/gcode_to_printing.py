@@ -3,9 +3,7 @@
 import requests
 from pathlib import Path
 import time
-
-PRINTER_IP = "146.137.240.52"
-PRUSALINK_KEY = "jjehZqxQ542F9pQ" 
+from secrets_loader import get_secrets
 
 def is_printer_ready(ip: str, api_key: str) -> bool:
     url = f"http://{ip}/api/v1/status"
@@ -26,6 +24,7 @@ def is_printer_ready(ip: str, api_key: str) -> bool:
 def upload_and_start_print(file_path: str, ip: str, api_key: str) -> bool:
     file_path_obj = Path(file_path)
     if not file_path_obj.exists():
+        print(f"DEBUG: File not found: {file_path}")
         return False
 
     url = f"http://{ip}/api/v1/files/usb/{file_path_obj.name}"
@@ -92,7 +91,11 @@ def monitor_print_job(ip: str, api_key: str) -> bool:
             
         # Poll every 30 seconds to avoid overwhelming the MK4S API
         time.sleep(30)
+
 if __name__ == "__main__":
-    # Test path updated to .gcode
+    secrets = get_secrets()
+    PRINTER_IP = secrets.get("prusa_ip", "")
+    PRUSALINK_KEY = secrets.get("prusalink_key", "")
+    
     TEST_BGCODE = "/home/rpl/workspaces/rpl_dev/prusa_mk4s_module/output_files/fluidtest_300mm.bgcode"
-    upload_and_start_print(TEST_GCODE, PRINTER_IP, PRUSALINK_KEY)
+    upload_and_start_print(TEST_BGCODE, PRINTER_IP, PRUSALINK_KEY)
