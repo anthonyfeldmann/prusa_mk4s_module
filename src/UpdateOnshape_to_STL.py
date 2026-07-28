@@ -1,5 +1,6 @@
 import os
 from onshape_client.client import Client
+from secrets_loader import get_secrets
 
 DID = '460766ee1fd3b3b2a615b94a'
 WID = '979042f4d058b6f5579afa14'
@@ -7,10 +8,12 @@ EID = '1dbb2720f9be98854d69ba84'
 
 def download_custom_stl(dynamic_length_mm):
     """Requests a custom-sized, metric STL from Onshape."""
+    secrets = get_secrets()
+    
     client = Client(configuration={
         "base_url": "https://cad-usw2.onshape.com", 
-        "access_key": "on_KGHB3Hg5gDl4hPffcpuCd",
-        "secret_key": "he1iDT28dxOsLz7Ww5TAVXgcj1PopbihMT50NKyMcmacO0pc"
+        "access_key": secrets.get("onshape_access_key", ""),
+        "secret_key": secrets.get("onshape_secret_key", "")
     })
 
     api_url = f"https://cad-usw2.onshape.com/api/partstudios/d/{DID}/w/{WID}/e/{EID}/stl"
@@ -29,6 +32,8 @@ def download_custom_stl(dynamic_length_mm):
         with open(output_file, 'w') as f:
             f.write(response.data)
         return output_file
+    
+    print(f"Failed to download STL. Status code: {response.status}")
     return None
 
 if __name__ == "__main__":
