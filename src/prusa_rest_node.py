@@ -2,7 +2,6 @@
 """Prusa MK4S Rest Node."""
 
 from typing import Any, Optional
-
 from typing_extensions import Annotated
 
 from madsci.common.types.node_types import RestNodeConfig
@@ -10,14 +9,12 @@ from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
 
 import prusa_driver
-
+from secrets_loader import get_secrets
 
 class PrusaNodeConfig(RestNodeConfig):
     """Config for Prusa node."""
-    
-    prusa_ip: Optional[str] = "146.137.240.52"
-    prusa_api_key: Optional[str] = "jjehZqxQ542F9pQ"
-
+    prusa_ip: Optional[str] = None
+    prusa_api_key: Optional[str] = None
 
 class PrusaNode(RestNode):
     """Node module for Prusa MK4S."""
@@ -29,8 +26,16 @@ class PrusaNode(RestNode):
         """Initialize node."""
         self.logger.log("Starting Prusa Node")
         
+        secrets = get_secrets()
+        
+        # Fallback to secrets if not provided dynamically in the MADSci config
+        if not self.config.prusa_ip:
+            self.config.prusa_ip = secrets.get("prusa_ip")
+        if not self.config.prusa_api_key:
+            self.config.prusa_api_key = secrets.get("prusalink_key")
+            
         if not self.config.prusa_ip or not self.config.prusa_api_key:
-            raise ValueError("Prusa IP or API key is missing from config")
+            raise ValueError("Prusa IP or API key is missing from config and secrets")
 
         prusa_driver.PRINTER_IP = self.config.prusa_ip
         prusa_driver.PRUSALINK_KEY = self.config.prusa_api_key
@@ -40,35 +45,33 @@ class PrusaNode(RestNode):
 
     def shutdown_handler(self) -> None:
         """Cleanly shuts down the node."""
-        self.logger.log("ending prusa node")
+        self.logger.log("Ending Prusa node")
         self.shutdown_has_run = True
 
     def state_handler(self) -> None:
         """Returns the current node state."""
         self.node_state = {"status": "ready"}
 
-    @action(name="slice_and_print", description="Run parametric generation and print")
+    @action(name="slice_and_print", description="Slice a given STL file and print it")
     def slice_and_print(
-        self, length: Annotated[float, "Parametric length in mm"]
+        self, stl_path: Annotated[str, "Absolute path to the STL file"]
     ) -> dict[str, Any]:
-        """Takes a length, generates CAD via Onshape, slices, and runs printer."""
-        self.logger.log(f"Executing parametric print job for length: {length}mm")
+        """Takes an STL path, slices it to .bgcode, and runs the printer."""
+        self.logger.log(f"Executing print job for STL: {stl_path}")
         
         try:
-            # Pass the length directly to your original driver logic
-            success = prusa_driver.run_parametric_loop(length)
+            # Passes the STL directly to the run_stl_print function
+            success = prusa_driver.run_stl_print(stl_path)
             
             if success:
-                self.logger.log("Print job successfully pushed to PrusaLink.")
-                return {"status": "succeeded", "length": length}
+                self.logger.log("Print job successfully completed.")
+                return {"status": "succeeded", "stl_path": stl_path}
             else:
-                raise Exception("PrusaLink rejected the print job.")
+                raise Exception("PrusaLink rejected the print job or encountered an error.")
                 
         except Exception as err:
             self.logger.error(f"Action failed: {err}")
             raise
 
-
 if __name__ == "__main__":
-    # Specify port 
     PrusaNode().start_node()
