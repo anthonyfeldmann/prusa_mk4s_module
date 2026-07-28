@@ -6,13 +6,20 @@ import argparse
 from UpdateOnshape_to_STL import download_custom_stl
 from STL_To_PRUSAPRINT import slice_mesh
 from gcode_to_printing import upload_and_start_print 
-
-PRINTER_IP = "146.137.240.52" 
-PRUSALINK_KEY = "jjehZqxQ542F9pQ" #may need to be changed
+from secrets_loader import get_secrets
 
 def run_parametric_loop(length_value):
     """Passes the dimension variables"""
     
+    # Securely load credentials
+    secrets = get_secrets()
+    PRINTER_IP = secrets.get("prusa_ip", "")
+    PRUSALINK_KEY = secrets.get("prusalink_key", "")
+    
+    if not PRINTER_IP or not PRUSALINK_KEY:
+        print("Error: Missing Printer IP or PrusaLink Key in secrets file.")
+        sys.exit(1)
+
     print(f"starting workflow w {length_value} mm")
     
     #STEP 1: ONSHAPE_to_STL
@@ -38,6 +45,7 @@ def run_parametric_loop(length_value):
     else:
         print("Fail; Printer is busy or unreachable. Data point not recorded.")
         sys.exit(1) # Fatal Failure (Tells your Optimizer to wait or try again)
+
 def main():
     """Allows an external optimizer to trigger this script and pass a variable."""
     parser = argparse.ArgumentParser(description="Parametric Loop Controller")
