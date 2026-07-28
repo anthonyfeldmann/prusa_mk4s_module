@@ -9,13 +9,13 @@ from pathlib import Path
 from gcode_to_printing import upload_and_start_print, is_printer_ready, monitor_print_job
 from STL_To_PRUSAPRINT import slice_mesh
 from UpdateOnshape_to_STL import download_custom_stl
+from secrets_loader import get_secrets
 
-PRINTER_IP = "146.137.240.52"
-PRUSALINK_KEY = "jjehZqxQ542F9pQ"
-
-# --- PRUSACONNECT CLOUD CREDENTIALS ---
-PRUSA_CONNECT_UUID = "3e40403e-a4c8-41b2-b3a6-c932feff4c64"
-PRUSA_CONNECT_TOKEN = "R55RXEA73e40403e"
+secrets = get_secrets()
+PRINTER_IP = secrets.get("prusa_ip", "")
+PRUSALINK_KEY = secrets.get("prusalink_key", "")
+PRUSA_CONNECT_UUID = secrets.get("prusa_connect_uuid", "")
+PRUSA_CONNECT_TOKEN = secrets.get("prusa_connect_token", "")
 
 def force_ready_via_cloud() -> bool:
     """Sends the 'Set Ready' command via PrusaConnect to dismiss the Finished screen."""
@@ -25,7 +25,6 @@ def force_ready_via_cloud() -> bool:
         "Authorization": f"Bearer {PRUSA_CONNECT_TOKEN}",
         "Content-Type": "application/json"
     }
-    # Command to force the UI into the Ready state
     payload = {"command": "set_ready"} 
     
     try:
@@ -41,13 +40,16 @@ def force_ready_via_cloud() -> bool:
         return False
 
 def run_parametric_loop(length: float) -> bool:
+    """Legacy function: downloads custom STL from Onshape, then prints."""
     stl_path = download_custom_stl(length)
     if not stl_path or not Path(stl_path).exists():
         return False
     return run_stl_print(stl_path)
 
 def run_stl_print(stl_path: str) -> bool:
+    """Slices a given STL file, uploads it, and monitors the print job."""
     if not Path(stl_path).exists():
+        print(f"Error: Provided STL path does not exist: {stl_path}")
         return False
 
     bgcode_path = slice_mesh(stl_path)
@@ -77,34 +79,26 @@ def run_stl_print(stl_path: str) -> bool:
     # Upload the file and start the job
     start_success = upload_and_start_print(bgcode_path, PRINTER_IP, PRUSALINK_KEY)
     
-    # If the print started successfully, block the script until it finishes!
     if start_success:
         print_finished = monitor_print_job(PRINTER_IP, PRUSALINK_KEY)
         
-        # --- END OF CYCLE CLEANUP ---
-        # If the print hit 100%, trigger the cloud reset before releasing the orchestrator
         if print_finished:
             print("Print completed successfully. Triggering cloud reset to clear UI...")
             force_ready_via_cloud()
-            
-            # Give the MK4 motherboard 2 seconds to physically update the screen 
-            # before the script exits and hands control back to the orchestrator.
             time.sleep(2)
-        # ----------------------------
-        
+            
         return print_finished
     else:
         return False
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Prusa MK4S Driver")
-    parser.add_argument("--stl", type=str)
-    parser.add_argument("--length", type=float)
+    parser.add_argument("--stl", type=str, help="Path to a specific STL file to print")
+    parser.add_argument("--length", type=float, help="Dynamic length for Onshape parametric generation")
     args = parser.parse_args()
 
     success = run_parametric_loop(args.length) if args.length else run_stl_print(args.stl)
     
-    # The script will only reach this line once the print is 100% finished
     sys.exit(0 if success else 1)
 
 if __name__ == "__main__":
