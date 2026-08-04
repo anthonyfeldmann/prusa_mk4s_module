@@ -3,6 +3,7 @@
 
 from typing import Any, Optional
 from typing_extensions import Annotated
+from pathlib import Path
 
 from madsci.common.types.node_types import RestNodeConfig
 from madsci.node_module.helpers import action
@@ -54,18 +55,18 @@ class PrusaNode(RestNode):
 
     @action(name="slice_and_print", description="Slice a given STL file and print it")
     def slice_and_print(
-        self, stl_path: Annotated[str, "Absolute path to the STL file"]
+        self, stl_path: Annotated[Path, "Absolute path to the STL file"]
     ) -> dict[str, Any]:
         """Takes an STL path, slices it to .bgcode, and runs the printer."""
-        self.logger.log(f"Executing print job for STL: {stl_path}")
+        self.logger.log(f"Executing print job for STL: {stl_path.resolve()}")
         
         try:
-            # Passes the STL directly to the run_stl_print function
-            success = prusa_driver.run_stl_print(stl_path)
+            # Passes the STL directly to the run_stl_print function as a string
+            success = prusa_driver.run_stl_print(str(stl_path))
             
             if success:
                 self.logger.log("Print job successfully completed.")
-                return {"status": "succeeded", "stl_path": stl_path}
+                return {"status": "succeeded", "stl_path": str(stl_path)}
             else:
                 raise Exception("PrusaLink rejected the print job or encountered an error.")
                 
