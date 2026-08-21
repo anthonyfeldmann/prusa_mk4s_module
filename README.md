@@ -29,7 +29,7 @@ The beauty of this module and additive manufacturing is the fact that anything c
    3c. change config_file variable in STL_To_PRUSAPRINT.py to new file path
 4. In Prusa_Automation.py add/change parametrized variables based on your needs, currently set to recieve a "length" variable
 
-##Printer Errors 
+## Printer Errors 
 Due to the nature of the code, it is common for a filament stuck error or "FINDA Didn't Trigger" to display on the printer, here is how to fix it.
 0. The printer may give an option to "unload filament". Allow the printer to try to fix the issue this mechanically before manually trying anything.
    0a. Good rule of thumb is to wait until the printer displays "HELP" and a QR code + error message
