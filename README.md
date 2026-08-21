@@ -29,6 +29,17 @@ The beauty of this module and additive manufacturing is the fact that anything c
    3c. change config_file variable in STL_To_PRUSAPRINT.py to new file path
 4. In Prusa_Automation.py add/change parametrized variables based on your needs, currently set to recieve a "length" variable
 
+##Printer Errors 
+Due to the nature of the code, it is common for a filament stuck error or "FINDA Didn't Trigger" to display on the printer, here is how to fix it.
+0. The printer may give an option to "unload filament". Allow the printer to try to fix the issue this mechanically before manually trying anything.
+   0a. Good rule of thumb is to wait until the printer displays "HELP" and a QR code + error message
+1. Unscrew the tube connecting the MMU unit to the nozzle
+2. Retract the filament manually until it is no longer in the Nozzle and MMU Units 
+3. Cut the end of the filament at a 45 degree angle
+4. Manual insert the filament back though so that the end of the filament is lined up with the exit hole of its stationary MMU track
+5. Reattach the disconnected tube and RESET printer
+6. Run Print 
+
 ```yaml
 node_name: prusa_alpha
 node_description: Prusa MK4S node in the RPL workcell
