@@ -18,10 +18,22 @@ The most important settings to configure:
 
 Configuration is loaded in priority order: environment variables > `.env` file > `settings.yaml`. A minimal `settings.yaml` might look like:
 
+## Changing Print:
+
+The beauty of this module and additive manufacturing is the fact that anything can be created! In order to change the model being iterated on, follow these steps:
+1. Create model in onshape
+2. In UpdateOnshape_to_STL.py, change the DID, EID, and WID variables to correspond with the new url
+3. If you want to change the printing setting:
+   3a. Create new settings in PrusaSlicer and save as a .ini file 
+   3b. import into the "configs" file
+   3c. change config_file variable in STL_To_PRUSAPRINT.py to new file path
+4. In Prusa_Automation.py add/change parametrized variables based on your needs, currently set to recieve a "length" variable
+
 ```yaml
 node_name: prusa_alpha
 node_description: Prusa MK4S node in the RPL workcell
 node_id: 01HPNMZF3SPK48EWA1VXMVYHWV
 prusa_ip: 146.137.240.52
 prusa_api_key: jjehZqxQ542F9pQ
-node_url: "[http://127.0.0.1:2006/](http://127.0.0.1:2006/)"
+node_url: "[http://127.0.0.1:2006/](http://127.0.0.1:2006/)
+
