@@ -40,6 +40,7 @@ Due to the nature of the code, it is common for a filament stuck error or "FINDA
 5. Reattach the disconnected tube and RESET printer
 6. Run Print 
 
+## YAML Config data 
 ```yaml
 node_name: prusa_alpha
 node_description: Prusa MK4S node in the RPL workcell
